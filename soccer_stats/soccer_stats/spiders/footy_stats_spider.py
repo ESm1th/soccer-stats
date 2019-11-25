@@ -1,5 +1,6 @@
 from datetime import datetime
 from bson.objectid import ObjectId
+from hashlib import md5
 
 import scrapy
 from scrapy.http import FormRequest
@@ -13,6 +14,11 @@ from soccer_stats.items import (
 
 
 class FootyStatsSpider(scrapy.Spider):
+    """
+    Spider that pulls soccer data from web resources.
+    Fetched data: leagues and related matches.
+    """
+
     name = 'footy_stats_spider'
     allowed_domains = ['footystats.org']
     base_url = 'https://footystats.org'
@@ -26,10 +32,14 @@ class FootyStatsSpider(scrapy.Spider):
         )
 
     def parse_leagues(self, response):
+        """Parses response and fetches country selectors from content. Gets
+        coutry name from selector and than yields requests for all leagues urls
+        for each available country."""
+
         country_selectors = response.xpath('//div[@class="pt2e"]')
 
         for selector in country_selectors:
-            country = selector.attrib['id']
+            country = selector.attrib['id']  # country name
             leagues_urls = selector.xpath('div/table/tr/td/a/@href').getall()
 
             for url in leagues_urls:
@@ -41,6 +51,7 @@ class FootyStatsSpider(scrapy.Spider):
                 )
 
     def parse_league(self, response, **kwargs):
+        """Makes requests for each available season for particular league."""        
 
         seasons = response.xpath(
             '//div[@class="detail season"]/'
@@ -48,7 +59,8 @@ class FootyStatsSpider(scrapy.Spider):
         )
 
         for season in seasons:
-
+            
+            # parameters for urls query string
             params = {
                 'hash': season.attrib['data-hash'],
                 'zzz': season.attrib['data-zzz'],
@@ -65,17 +77,20 @@ class FootyStatsSpider(scrapy.Spider):
             )
 
     def parse_season(self, response, **kwargs):
+        """Parses page with particular league season. Creates `league` item and
+        fills it with data parsed from returned content. League item has `hash`
+        field that uses to prevent duplicate values in a database and for
+        manual references with `match` items."""
 
         loader = ItemLoader(
             item=League(),
             response=response
         )
 
-        loader.add_value('_id', ObjectId())
         loader.add_value('country', kwargs.get('country'))
         loader.add_xpath(
             'title',
-            '//div[@id="teamSummary"]/h1[@class="teamName long"]/text()'
+            '//div[@id="teamSummary"]/h1[contains(@class, "teamName")]/text()'
         )
         loader.add_xpath(
             'nation',
@@ -113,20 +128,6 @@ class FootyStatsSpider(scrapy.Spider):
             )
         )
         loader.add_xpath(
-            'season_end',
-            (
-                '//div[@class="league-details"]/div[@class="detail season"]'
-                '/div[contains(., "Season")]/following-sibling::div/text()'
-            )
-        )
-        loader.add_xpath(
-            'all_matches_count',
-            (
-                '//div[@class="league-details"]/div[@class="detail season"]'
-                '/div[contains(., "Matches")]/following-sibling::div/text()'
-            )
-        )
-        loader.add_xpath(
             'all_matches_count',
             (
                 '//div[@class="league-details"]/div[@class="detail season"]'
@@ -139,6 +140,10 @@ class FootyStatsSpider(scrapy.Spider):
         )
 
         league = loader.load_item()
+        league['hash'] = md5(
+            str([league['title'], league['season']]).encode()
+        ).hexdigest()
+
         yield league
 
         matches = response.xpath(
@@ -149,6 +154,7 @@ class FootyStatsSpider(scrapy.Spider):
         href = matches.xpath('@href').get()
         if href == '#':
 
+            # parameters for urls query string
             params = {
                 'hash': matches.attrib['data-hash'],
                 'zzz': matches.attrib['data-zzz'],
@@ -160,7 +166,7 @@ class FootyStatsSpider(scrapy.Spider):
                 method='POST',
                 formdata=params,
                 callback=self.parse_matches,
-                cb_kwargs={'league_id': league['_id']}
+                cb_kwargs={'league_hash': league['hash']}
             )
 
         elif not href:  # to do what if recursion?
@@ -172,10 +178,12 @@ class FootyStatsSpider(scrapy.Spider):
             yield response.follow(
                 url=href,
                 callback=self.parse_matches,
-                cb_kwargs={'league_id': league['_id']}
+                cb_kwargs={'league_hash': league['hash']}
             )
 
     def parse_matches(self, response, **kwargs):
+        """Pulls all urls for each match from returned content and
+        yields request for each url."""
 
         matches = response.xpath(
             '//table[contains(@class, "matches-table")]/tr/'
@@ -187,17 +195,20 @@ class FootyStatsSpider(scrapy.Spider):
             yield response.follow(
                 url=match,
                 callback=self.parse_match,
-                cb_kwargs={'league_id': kwargs.get('league_id')}
+                cb_kwargs={'league_hash': kwargs.get('league_hash')}
             )
         
     def parse_match(self, response, **kwargs):
+        """Fetches data about particular event from returned content.
+        Creates match item and fills with fetched data. Match item has `hash`
+        field that uses to prevent duplicate values in a database and to connect
+        it with `PostMatchStatisticsItem` if these data will exist."""
 
         match_loader = ItemLoader(item=Match(), response=response)
 
-        match_loader.add_value('_id', ObjectId())
         match_loader.add_value(
-            'league_id',
-            kwargs.get('league_id')
+            'league_hash',
+            kwargs.get('league_hash')
         )
         match_loader.add_xpath(
             'timestamp',
@@ -227,16 +238,28 @@ class FootyStatsSpider(scrapy.Spider):
         )
 
         match = match_loader.load_item()
+        match['hash'] = md5(
+            str(
+                [
+                    match['league_hash'],
+                    match['timestamp'],
+                    match['home_team'],
+                    match['away_team']
+                ]
+            ).encode()
+        ).hexdigest()
+
         yield match
 
         if response.xpath('//div[@class="w100 cf ac"]'):
-
+            
+            # if post match statistics data exists
             statistics_loader = ItemLoader(
                 item=PostMatchStatistics(),
                 response=response
             )
 
-            statistics_loader.add_value('match_id', match['_id'])
+            statistics_loader.add_value('match_hash', match['hash'])
             statistics_loader.add_xpath(
                 'possession',
                 '//span[contains(@class, "possession")]/text()'
@@ -270,6 +293,8 @@ class FootyStatsSpider(scrapy.Spider):
             yield statistics_loader.load_item()
 
     def make_url(self, path):
+        """Returns url created from base url and relative path."""
+
         return '{base}/{relative}'.format(base=self.base_url, relative=path)
 
 
