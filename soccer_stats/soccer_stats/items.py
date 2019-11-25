@@ -6,7 +6,6 @@ from soccer_stats.processors import (
     strip_string,
     convert_to_integer,
     process_season,
-    process_end_season,
     process_all_matches,
     process_timestamp,
     process_home_result,
@@ -16,7 +15,6 @@ from soccer_stats.processors import (
 
 
 class League(scrapy.Item):
-    _id = scrapy.Field(output_processor=TakeFirst())
     title = scrapy.Field(output_processor=process_league_title)
     country = scrapy.Field(output_processor=TakeFirst())
     nation = scrapy.Field(output_processor=strip_string)
@@ -24,15 +22,14 @@ class League(scrapy.Item):
     league_type = scrapy.Field(output_processor=strip_string)
     teams_count = scrapy.Field(output_processor=convert_to_integer)
     season = scrapy.Field(output_processor=process_season)
-    season_end = scrapy.Field(output_processor=process_end_season)
     all_matches_count = scrapy.Field(output_processor=process_all_matches)
     completed = scrapy.Field()
     image_url = scrapy.Field(output_processor=TakeFirst())
+    hash = scrapy.Field()
 
 
 class Match(scrapy.Item):
-    _id = scrapy.Field(output_processor=TakeFirst())
-    league_id = scrapy.Field(output_processor=TakeFirst())
+    league_hash = scrapy.Field(output_processor=TakeFirst())
     timestamp = scrapy.Field(output_processor=process_timestamp)
     home_team = scrapy.Field(output_processor=TakeFirst())
     away_team = scrapy.Field(output_processor=TakeFirst())
@@ -41,11 +38,12 @@ class Match(scrapy.Item):
     away_result = scrapy.Field(output_processor=process_away_result)
     home_image = scrapy.Field()
     away_image = scrapy.Field()
+    hash = scrapy.Field()
     post_match_statistics = scrapy.Field()
 
 
 class PostMatchStatistics(scrapy.Item):
-    match_id = scrapy.Field(output_processor=TakeFirst())
+    match_hash = scrapy.Field(output_processor=TakeFirst())
     possession = scrapy.Field(output_processor=process_post_match_data)
     shots = scrapy.Field(output_processor=process_post_match_data)
     cards = scrapy.Field(output_processor=process_post_match_data)
