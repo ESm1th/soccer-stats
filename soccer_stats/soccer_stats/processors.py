@@ -12,15 +12,8 @@ def convert_to_integer(values: list) -> int:
     return int(values.pop())
 
 
-def process_season(values: list) -> int:
-    seasons = values.pop().strip().split('/')
-    return int(seasons[0])
-
-
-def process_end_season(values: list) -> int:
-    seasons = values.pop().strip().split('/')
-    if len(seasons) == 2:
-        return int(seasons.pop())
+def process_season(values: list) -> str:
+    return values.pop().strip()
 
 
 def process_all_matches(values: list) -> int:

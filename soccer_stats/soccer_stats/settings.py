@@ -51,4 +51,12 @@ DUPEFILTER_DEBUG = True
 # Mongo settings
 MONGO_URI = os.environ['MONGO_URI']
 MONGO_DATABASE = os.environ['MONGO_DATABASE']
-MONGO_COLLECTION = os.environ['MONGO_COLLECTION']
+MONGO_LEAGUES_COLLECTION = os.environ['MONGO_LEAGUES_COLLECTION']
+MONGO_MATCHES_COLLECTION = os.environ['MONGO_MATCHES_COLLECTION']
+
+# Item pipelines
+ITEM_PIPELINES = {
+    'soccer_stats.pipelines.LeaguePipeline': 100,
+    'soccer_stats.pipelines.MatchPipeline': 110,
+    'soccer_stats.pipelines.PostMatchStatisticsPipeline': 120
+}
