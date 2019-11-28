@@ -11,6 +11,7 @@ from soccer_stats.items import (
 
 
 class BaseSoccerStatsPipline:
+    """Common methods across pipelines."""
 
     def open_spider(self, spider):
         self.client = mongo_client
@@ -21,20 +22,28 @@ class BaseSoccerStatsPipline:
 class LeaguePipeline(BaseSoccerStatsPipline):
 
     def process_item(self, item, spider):
+        """Works with `League` item. Insert new document to database or
+        update it if this document already exists."""
 
         if isinstance(item, League):
             self.client.collection = MONGO_LEAGUES_COLLECTION
-
             league = self.client.collection.find_one({'hash': item['hash']})
+
             if not league:
                 self.client.collection.insert_one(dict(item))
-
+            else:
+                self.client.collection.update_one(
+                    {'hash': item['hash']},
+                    {'$set': dict(item)}
+                )
         return item
 
 
 class MatchPipeline(BaseSoccerStatsPipline):
 
     def process_item(self, item, spider):
+        """Works with `Match` item. Insert new document to database or
+        update it if this document already exists."""
 
         if isinstance(item, Match):
             self.client.collection = MONGO_MATCHES_COLLECTION
@@ -47,13 +56,14 @@ class MatchPipeline(BaseSoccerStatsPipline):
                 )
             else:
                 self.client.collection.insert_one(dict(item))
-
         return item
 
 
 class PostMatchStatisticsPipeline(BaseSoccerStatsPipline):
 
     def process_item(self, item, spider):
+        """Works with `PostMatchStatistics` item. Updates existing `Match`
+        document by match statistics."""
 
         if isinstance(item, PostMatchStatistics):
             self.client.collection = MONGO_MATCHES_COLLECTION
@@ -63,5 +73,4 @@ class PostMatchStatisticsPipeline(BaseSoccerStatsPipline):
                 {'hash': match_hash},
                 {'$set': {'post_match_statistics': dict(item)}}
             )
-
         return item

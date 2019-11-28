@@ -3,8 +3,13 @@ from soccer_stats.settings import MONGO_URI, MONGO_DATABASE
 
 
 class StatsMongoClient:
+    """Class simplifies working with mongo"""
 
-    def __init__(self, uri, database):
+    def __init__(self, uri: str, database: str) -> None:
+        """
+        :param uri str: mongodb uri
+        :param database str: mongo database name
+        """
         self.__connection = MongoClient(uri)
         self.__database = self.__connection[database]
 

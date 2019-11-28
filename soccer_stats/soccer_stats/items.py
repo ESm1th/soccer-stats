@@ -26,6 +26,7 @@ class League(scrapy.Item):
     completed = scrapy.Field()
     image_url = scrapy.Field(output_processor=TakeFirst())
     hash = scrapy.Field()
+    blocked = scrapy.Field()
 
 
 class Match(scrapy.Item):
