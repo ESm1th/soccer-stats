@@ -1,7 +1,7 @@
 #!/bin/bash
 
 mongo <<EOF
-use admin
+use soccer
 db.createUser({
   user:  '$MONGO_USERNAME',
   pwd: '$MONGO_PASSWORD',
