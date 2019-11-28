@@ -10,6 +10,8 @@ BOT_NAME = 'soccer_stats'
 SPIDER_MODULES = ['soccer_stats.spiders']
 NEWSPIDER_MODULE = 'soccer_stats.spiders'
 
+LOG_FILE = 'soccer.log'
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = (
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
@@ -24,7 +26,7 @@ ROBOTSTXT_OBEY = True
 CONCURRENT_REQUESTS = 4
 
 # Configure a delay for requests for the same website (default: 0)
-DOWNLOAD_DELAY = 2
+DOWNLOAD_DELAY = 0.5
 
 # The download delay setting will honor only one of:
 CONCURRENT_REQUESTS_PER_DOMAIN = 4
@@ -59,4 +61,17 @@ ITEM_PIPELINES = {
     'soccer_stats.pipelines.LeaguePipeline': 100,
     'soccer_stats.pipelines.MatchPipeline': 110,
     'soccer_stats.pipelines.PostMatchStatisticsPipeline': 120
+}
+
+# Splash settings
+SPLASH_URL = 'http://localhost:8050'
+DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
+HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
+DOWNLOADER_MIDDLEWARES = {
+    'scrapy_splash.SplashCookiesMiddleware': 723,
+    'scrapy_splash.SplashMiddleware': 725,
+    'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
+}
+SPIDER_MIDDLEWARES = {
+    'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
 }

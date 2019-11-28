@@ -5,6 +5,7 @@ from hashlib import md5
 import scrapy
 from scrapy.http import FormRequest
 from scrapy.loader import ItemLoader
+from scrapy_splash import SplashRequest
 
 from soccer_stats.items import (
     League,
@@ -24,6 +25,21 @@ class FootyStatsSpider(scrapy.Spider):
     base_url = 'https://footystats.org'
 
     custom_settings = {'LOG_STDOUT': True, }
+
+    match_wait_script = """
+        function main(splash)
+            assert(splash:go(splash.args.url))
+            
+            while not splash:select('p[data-time]') do
+                splash:wait(1)
+            end
+
+            return {
+                html = splash:html(),
+                har = splash:har(),
+            }
+        end
+    """
 
     def start_requests(self):
         yield scrapy.Request(
@@ -169,12 +185,12 @@ class FootyStatsSpider(scrapy.Spider):
                 cb_kwargs={'league_hash': league['hash']}
             )
 
-        elif not href:  # to do what if recursion?
-            response.request.dont_filter = True
-            yield response.request
+        elif not href:
+            # matches for this league available for premium account
+            league['blocked'] = True
+            yield league
 
         else:
-
             yield response.follow(
                 url=href,
                 callback=self.parse_matches,
@@ -192,9 +208,11 @@ class FootyStatsSpider(scrapy.Spider):
 
         for match in matches:
 
-            yield response.follow(
-                url=match,
+            yield SplashRequest(
+                url=self.make_url(match),
                 callback=self.parse_match,
+                endpoint='execute',
+                args={'lua_source': self.match_wait_script},
                 cb_kwargs={'league_hash': kwargs.get('league_hash')}
             )
         
@@ -204,7 +222,10 @@ class FootyStatsSpider(scrapy.Spider):
         field that uses to prevent duplicate values in a database and to connect
         it with `PostMatchStatisticsItem` if these data will exist."""
 
-        match_loader = ItemLoader(item=Match(), response=response)
+        match_loader = ItemLoader(
+            item=Match(),
+            response=response
+        )
 
         match_loader.add_value(
             'league_hash',
@@ -236,19 +257,16 @@ class FootyStatsSpider(scrapy.Spider):
             '//div[contains(@class, "h2h-final-score")]/'
             'div[@class="widget-content"]/h2/text()'
         )
-
         match = match_loader.load_item()
-        match['hash'] = md5(
-            str(
-                [
-                    match['league_hash'],
-                    match['timestamp'],
-                    match['home_team'],
-                    match['away_team']
-                ]
-            ).encode()
-        ).hexdigest()
 
+        fields = [
+            match['league_hash'],
+            match['timestamp'],
+            match['home_team'],
+            match['away_team']
+        ]
+
+        match['hash'] = md5(str(fields).encode()).hexdigest()
         yield match
 
         if response.xpath('//div[@class="w100 cf ac"]'):
