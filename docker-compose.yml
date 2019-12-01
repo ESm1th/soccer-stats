@@ -21,7 +21,7 @@ services:
     ports:
       - "8050:8050"
     depends_on:
-      - "scrapyd"
+      - "mongodb"
     restart: always
 
 volumes:
