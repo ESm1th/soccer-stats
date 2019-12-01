@@ -13,20 +13,10 @@ services:
     volumes:
       - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
       - ./mongodata:/data/db
-
-  scrapyd:
-    build: .
-    container_name: soccer_data_scrapyd
-    ports:
-      - "6800:6800"
-    env_file: 
-      - .env
-    depends_on:
-      - "mongodb"
-    restart: always
   
   splash:
     image: scrapinghub/splash
+    command: --max-timeout 600
     container_name: soccer_data_splash
     ports:
       - "8050:8050"

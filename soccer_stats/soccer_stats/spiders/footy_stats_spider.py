@@ -212,7 +212,7 @@ class FootyStatsSpider(scrapy.Spider):
                 url=self.make_url(match),
                 callback=self.parse_match,
                 endpoint='execute',
-                args={'lua_source': self.match_wait_script},
+                args={'timeout': 600, 'lua_source': self.match_wait_script},
                 cb_kwargs={'league_hash': kwargs.get('league_hash')}
             )
         
@@ -312,7 +312,6 @@ class FootyStatsSpider(scrapy.Spider):
 
     def make_url(self, path):
         """Returns url created from base url and relative path."""
-
         return '{base}/{relative}'.format(base=self.base_url, relative=path)
 
 
