@@ -85,4 +85,4 @@ DOWNLOADER_MIDDLEWARES.update(
 )
 
 # Timeout for blank 200 responses
-BLANK_TIMEOUT = 120
+BLANK_TIMEOUT = 20
