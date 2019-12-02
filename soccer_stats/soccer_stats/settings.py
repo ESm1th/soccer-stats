@@ -20,16 +20,19 @@ USER_AGENT = (
 )
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
+
+# Cookies
+COOKIES_ENABLED = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 4
+CONCURRENT_REQUESTS = 10
 
 # Configure a delay for requests for the same website (default: 0)
 DOWNLOAD_DELAY = 0.5
 
 # The download delay setting will honor only one of:
-CONCURRENT_REQUESTS_PER_DOMAIN = 4
+CONCURRENT_REQUESTS_PER_DOMAIN = 10
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 AUTOTHROTTLE_ENABLED = True
@@ -42,7 +45,7 @@ AUTOTHROTTLE_MAX_DELAY = 60
 
 # The average number of requests Scrapy should be sending in parallel to
 # each remote server
-AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
+AUTOTHROTTLE_TARGET_CONCURRENCY = 5
 
 # Enable showing throttling stats for every response received:
 AUTOTHROTTLE_DEBUG = True
@@ -64,7 +67,7 @@ ITEM_PIPELINES = {
 }
 
 # Splash settings
-SPLASH_URL = 'http://localhost:8050'
+SPLASH_URL = 'http://127.0.0.1:8050'
 DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
 HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
 DOWNLOADER_MIDDLEWARES = {
@@ -75,3 +78,11 @@ DOWNLOADER_MIDDLEWARES = {
 SPIDER_MIDDLEWARES = {
     'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
 }
+
+# Custom project downloader middlewares
+DOWNLOADER_MIDDLEWARES.update(
+    {'soccer_stats.middlewares.Blank200ResponseMiddleware': 1000, }
+)
+
+# Timeout for blank 200 responses
+BLANK_TIMEOUT = 120

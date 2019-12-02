@@ -24,20 +24,18 @@ class FootyStatsSpider(scrapy.Spider):
     allowed_domains = ['footystats.org']
     base_url = 'https://footystats.org'
 
-    custom_settings = {'LOG_STDOUT': True, }
+    custom_settings = {'LOG_STDOUT': True, 'LOG_FILE': None}
 
     match_wait_script = """
         function main(splash)
+            splash.images_enabled = false
             assert(splash:go(splash.args.url))
             
             while not splash:select('p[data-time]') do
                 splash:wait(1)
             end
 
-            return {
-                html = splash:html(),
-                har = splash:har(),
-            }
+            return {html = splash:html()}
         end
     """
 
@@ -211,8 +209,9 @@ class FootyStatsSpider(scrapy.Spider):
             yield SplashRequest(
                 url=self.make_url(match),
                 callback=self.parse_match,
-                endpoint='execute',
-                args={'timeout': 600, 'lua_source': self.match_wait_script},
+                # endpoint='execute',
+                # args={'timeout': 600, 'lua_source': self.match_wait_script},
+                args={'wait': 2},
                 cb_kwargs={'league_hash': kwargs.get('league_hash')}
             )
         
