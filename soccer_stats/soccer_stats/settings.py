@@ -23,13 +23,13 @@ USER_AGENT = (
 ROBOTSTXT_OBEY = False
 
 # Cookies
-COOKIES_ENABLED = False
+COOKIES_ENABLED = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 CONCURRENT_REQUESTS = 10
 
 # Configure a delay for requests for the same website (default: 0)
-DOWNLOAD_DELAY = 0.5
+DOWNLOAD_DELAY = 0.8
 
 # The download delay setting will honor only one of:
 CONCURRENT_REQUESTS_PER_DOMAIN = 10
@@ -66,23 +66,11 @@ ITEM_PIPELINES = {
     'soccer_stats.pipelines.PostMatchStatisticsPipeline': 120
 }
 
-# Splash settings
-SPLASH_URL = 'http://127.0.0.1:8050'
-DUPEFILTER_CLASS = 'scrapy_splash.SplashAwareDupeFilter'
-HTTPCACHE_STORAGE = 'scrapy_splash.SplashAwareFSCacheStorage'
-DOWNLOADER_MIDDLEWARES = {
-    'scrapy_splash.SplashCookiesMiddleware': 723,
-    'scrapy_splash.SplashMiddleware': 725,
-    'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
-}
-SPIDER_MIDDLEWARES = {
-    'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
-}
-
 # Custom project downloader middlewares
-DOWNLOADER_MIDDLEWARES.update(
-    {'soccer_stats.middlewares.Blank200ResponseMiddleware': 1000, }
-)
+DOWNLOADER_MIDDLEWARES = {
+    'soccer_stats.middlewares.Blank200ResponseMiddleware': 1000,
+}
 
 # Timeout for blank 200 responses
 BLANK_TIMEOUT = 20
+

@@ -1,9 +1,10 @@
+import json
 from datetime import datetime
 from bson.objectid import ObjectId
 from hashlib import md5
 
 import scrapy
-from scrapy.http import FormRequest
+from scrapy.http import FormRequest, HtmlResponse
 from scrapy.loader import ItemLoader
 from scrapy_splash import SplashRequest
 
@@ -15,6 +16,7 @@ from soccer_stats.items import (
 
 
 class FootyStatsSpider(scrapy.Spider):
+
     """
     Spider that pulls soccer data from web resources.
     Fetched data: leagues and related matches.
@@ -26,19 +28,6 @@ class FootyStatsSpider(scrapy.Spider):
 
     custom_settings = {'LOG_STDOUT': True, 'LOG_FILE': None}
 
-    match_wait_script = """
-        function main(splash)
-            splash.images_enabled = false
-            assert(splash:go(splash.args.url))
-            
-            while not splash:select('p[data-time]') do
-                splash:wait(1)
-            end
-
-            return {html = splash:html()}
-        end
-    """
-
     def start_requests(self):
         yield scrapy.Request(
             url=self.make_url('/leagues/'),
@@ -46,10 +35,11 @@ class FootyStatsSpider(scrapy.Spider):
         )
 
     def parse_leagues(self, response):
-        """Parses response and fetches country selectors from content. Gets
+        """
+        Parses response and fetches country selectors from content. Gets
         coutry name from selector and than yields requests for all leagues urls
-        for each available country."""
-
+        for each available country.
+        """
         country_selectors = response.xpath('//div[@class="pt2e"]')
 
         for selector in country_selectors:
@@ -57,7 +47,6 @@ class FootyStatsSpider(scrapy.Spider):
             leagues_urls = selector.xpath('div/table/tr/td/a/@href').getall()
 
             for url in leagues_urls:
-
                 yield response.follow(
                     url=url,
                     callback=self.parse_league,
@@ -66,14 +55,12 @@ class FootyStatsSpider(scrapy.Spider):
 
     def parse_league(self, response, **kwargs):
         """Makes requests for each available season for particular league."""        
-
         seasons = response.xpath(
             '//div[@class="detail season"]/'
             'div[contains(@class, "drop-down-parent")]/ul/li/a'
         )
 
         for season in seasons:
-            
             # parameters for urls query string
             params = {
                 'hash': season.attrib['data-hash'],
@@ -95,12 +82,10 @@ class FootyStatsSpider(scrapy.Spider):
         fills it with data parsed from returned content. League item has `hash`
         field that uses to prevent duplicate values in a database and for
         manual references with `match` items."""
-
         loader = ItemLoader(
             item=League(),
             response=response
         )
-
         loader.add_value('country', kwargs.get('country'))
         loader.add_xpath(
             'title',
@@ -152,22 +137,20 @@ class FootyStatsSpider(scrapy.Spider):
             'image_url',
             '//div[@id="teamSummary"]/img/@src'
         )
-
         league = loader.load_item()
+
         league['hash'] = md5(
             str([league['title'], league['season']]).encode()
         ).hexdigest()
-
         yield league
 
         matches = response.xpath(
             '//div[@id="teamSummary"]/ul[contains(@class, "secondary-nav")]/'
             'li[contains(@class, "middle")]/a'
         )  # selector
-
         href = matches.xpath('@href').get()
-        if href == '#':
 
+        if href == '#':
             # parameters for urls query string
             params = {
                 'hash': matches.attrib['data-hash'],
@@ -182,12 +165,10 @@ class FootyStatsSpider(scrapy.Spider):
                 callback=self.parse_matches,
                 cb_kwargs={'league_hash': league['hash']}
             )
-
         elif not href:
             # matches for this league available for premium account
             league['blocked'] = True
             yield league
-
         else:
             yield response.follow(
                 url=href,
@@ -196,36 +177,58 @@ class FootyStatsSpider(scrapy.Spider):
             )
 
     def parse_matches(self, response, **kwargs):
-        """Pulls all urls for each match from returned content and
-        yields request for each url."""
-
+        """
+        Pulls all urls for each match from returned content and
+        yields request for each url.
+        """
         matches = response.xpath(
             '//table[contains(@class, "matches-table")]/tr/'
             'td[contains(@class, "link")]/a/@href'
         ).getall()
 
         for match in matches:
-
-            yield SplashRequest(
-                url=self.make_url(match),
-                callback=self.parse_match,
-                # endpoint='execute',
-                # args={'timeout': 600, 'lua_source': self.match_wait_script},
-                args={'wait': 2},
+            yield response.follow(
+                url=match,
+                callback=self.parse_match_dates,
                 cb_kwargs={'league_hash': kwargs.get('league_hash')}
             )
+
+    def parse_match_dates(self, response, **kwargs):
+        active_match_item = response.xpath(
+            '//ul[@class="menu bbox"]/li/'
+            'p[contains(@class, "active")]/parent::li'
+        )
+
+        params = {
+            'z': active_match_item.attrib['data-z'],
+            'zz': active_match_item.attrib['data-zz'],
+            'zzzz': active_match_item.attrib['data-zzzz']
+        }
         
+        yield FormRequest(
+            url=self.make_url('ajax_h2h.php'),
+            method='POST',
+            formdata=params,
+            callback=self.parse_match,
+            cb_kwargs={'league_hash': kwargs.get('league_hash')}
+        )
+
     def parse_match(self, response, **kwargs):
-        """Fetches data about particular event from returned content.
+        """
+        Fetches data about particular event from returned content.
         Creates match item and fills with fetched data. Match item has `hash`
         field that uses to prevent duplicate values in a database and to connect
-        it with `PostMatchStatisticsItem` if these data will exist."""
+        it with `PostMatchStatisticsItem` if these data will exist.
+        """
+        html_event_part = HtmlResponse(
+            url=response.url,
+            body=json.loads(response.body)['content1'].encode()
+        )
 
         match_loader = ItemLoader(
             item=Match(),
-            response=response
+            response=html_event_part
         )
-
         match_loader.add_value(
             'league_hash',
             kwargs.get('league_hash')
@@ -264,18 +267,20 @@ class FootyStatsSpider(scrapy.Spider):
             match['home_team'],
             match['away_team']
         ]
-
         match['hash'] = md5(str(fields).encode()).hexdigest()
         yield match
 
-        if response.xpath('//div[@class="w100 cf ac"]'):
-            
+        html_post_match = HtmlResponse(
+            url=response.url,
+            body=json.loads(response.body)['content2'].encode()
+        )
+
+        if html_post_match.xpath('//div[@class="w100 cf ac"]'):
             # if post match statistics data exists
             statistics_loader = ItemLoader(
                 item=PostMatchStatistics(),
-                response=response
+                response=html_post_match
             )
-
             statistics_loader.add_value('match_hash', match['hash'])
             statistics_loader.add_xpath(
                 'possession',
@@ -306,7 +311,6 @@ class FootyStatsSpider(scrapy.Spider):
                 '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Offsides")]'
                 '/following-sibling::div[contains(@class, "bbox")]/span/text()'
             )
-
             yield statistics_loader.load_item()
 
     def make_url(self, path):
