@@ -1,8 +1,7 @@
 # soccer-stats
 Project to fetch soccer data from web
 
-
-#### How to start up with this project
+#### How to start
 Clone repository
 ```
 $ git clone https://github.com/ESm1th/soccer-stats.git
