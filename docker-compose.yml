@@ -1,4 +1,4 @@
-version: "3.7"
+version: "3.3"
 
 services:
 
@@ -13,16 +13,6 @@ services:
     volumes:
       - ./mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
       - ./mongodata:/data/db
-  
-  splash:
-    image: scrapinghub/splash
-    command: --max-timeout 600
-    container_name: soccer_data_splash
-    ports:
-      - "8050:8050"
-    depends_on:
-      - "mongodb"
-    restart: always
 
 volumes:
   mongodata:
