@@ -35,7 +35,7 @@ Execute following commands in term:
 ```
 $ docker-compose up -d
 ```
-Then change directory to `soccer_stats` folder and execute crawling command:
+Then change directory to internal `soccer_stats` folder and execute crawling command:
 ```
 $ scrapy crawl footy_stats_spider
 ```
