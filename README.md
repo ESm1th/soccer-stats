@@ -35,6 +35,14 @@ Execute following commands in term:
 ```
 $ docker-compose up -d
 ```
+Create virtual environment and activate it:
+```
+$ mkvirtualenv soccer --python=python3
+```
+And after virtual environment created:
+```
+$ pip install -r requirements.txt
+```
 Then change directory to internal `soccer_stats` folder and execute crawling command:
 ```
 $ scrapy crawl footy_stats_spider
