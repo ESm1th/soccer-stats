@@ -26,7 +26,7 @@ class FootyStatsSpider(scrapy.Spider):
     allowed_domains = ['footystats.org']
     base_url = 'https://footystats.org'
 
-    custom_settings = {'LOG_STDOUT': True, 'LOG_FILE': None}
+    # custom_settings = {'LOG_STDOUT': True, 'LOG_FILE': None}
 
     def start_requests(self):
         yield scrapy.Request(
