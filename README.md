@@ -24,10 +24,8 @@ Change directory to projects `root` folder (where are located `Dockerfile` and `
       |   .env
       |   .gitignore
       |   docker-compose.yml
-      |   Dockerfile
       |   mongo-init.sh
       |   requirements.txt
-      |   scrapyd.conf
       +---soccer_stats
 ```
 Execute following commands in term:
