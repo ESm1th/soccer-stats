@@ -22,8 +22,9 @@ Structure
       |     mongo-init.sh
       |     scrapyd.conf
       +---soccer_stats
-          ...
+            ...
 ```
+
 Add `.env` file to projects `root` directory and fill it with following variables:
 ```
 MONGO_USERNAME=username  # username that should interact with database
@@ -40,17 +41,15 @@ Execute following commands in term:
 $ docker-compose up -d
 ```
 
-Change directory to project `root` folder, create virtual environment and activate it with following command:
+At this moment scrapyd service and mongodb containers should running on your machine.
+Change directory to internal soccer_stats folder and execute request to scrapyd service:
 ```
-$ mkvirtualenv soccer --python=python3
+curl http://localhost:6800/addversion.json -F project=soccer_stats -F version=0.1 -F egg=@soccer_stats.egg
 ```
+Response from request above:
+```
+{"node_name": "some_hash", "status": "ok", "project": "soccer_stats", "version": "0.1", "spiders": 1}
+```
+This mean that you 'load' your project to scrapyd service and now you can push it to do some useful job for you.
 
-And after virtual environment created:
-```
-$ pip install -r requirements.txt
-```
 
-Then change directory to internal `soccer_stats` folder and execute crawling command:
-```
-$ scrapy crawl get_soccer_stats
-```
