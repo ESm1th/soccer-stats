@@ -50,4 +50,33 @@ Response from request above:
 ```
 This mean that you 'load' your project to scrapyd service and now you can push it to do some useful job for you.
 
+Enter command to start crawling:
+```
+curl http://localhost:6800/schedule.json -F project=soccer_stats -F spider=get_soccer_data
+```
+
+Check that job is running:
+```
+curl http://localhost:6800/listjobs.json?project=soccer_stats
+```
+
+Response:
+```python
+{
+    "finished": [],
+    "node_name": "some_hash",
+    "pending": [],
+    "running": [
+        {
+            "id": "another_some_hash",
+            "pid": some_integer,
+            "spider": "get_soccer_data",
+            "start_time": "some_datetime_value"
+        }
+    ],
+    "status": "ok"
+}
+```
+
+This mean that spider `get_soccer_data` is running and pulling data to mongodb.
 
