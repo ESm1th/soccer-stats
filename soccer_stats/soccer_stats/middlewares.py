@@ -2,7 +2,6 @@ from time import sleep
 from logging import getLogger
 
 from scrapy.http import TextResponse
-from scrapy_splash import SplashRequest
 
 
 logger = getLogger(__name__)
