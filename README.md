@@ -12,14 +12,14 @@ Install docker and docker-compose on your OS. For example url to **Ubuntu Linux*
 Structure
 ```
 +---soccer_stats
-      |   .env
       |   .gitignore
       |   README.md
-      |   requirements.txt
       |---docker
+      |     .env
       |     docker-compose.yml
       |     Dockerfile
       |     mongo-init.sh
+      |     requirements.txt
       |     scrapyd.conf
       +---soccer_stats
             ...
@@ -29,7 +29,6 @@ Add `.env` file to projects `root` directory and fill it with following variable
 ```
 MONGO_USERNAME=username  # username that should interact with database
 MONGO_PASSWORD=password  # password for this username
-MONGO_URI=mongodb://username:password@localhost/admin  # username and password from previous variables
 MONGO_DATABASE=soccer  # name of database, you can enter here any prefferd name
 MONGO_LEAGUES_COLLECTION=leagues  # collection name for fetched leagues
 MONGO_MATCHES_COLLECTION=matches  # collection name for fetched matches
