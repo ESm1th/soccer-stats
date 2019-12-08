@@ -6,7 +6,6 @@ from hashlib import md5
 import scrapy
 from scrapy.http import FormRequest, HtmlResponse
 from scrapy.loader import ItemLoader
-from scrapy_splash import SplashRequest
 
 from soccer_stats.items import (
     League,
