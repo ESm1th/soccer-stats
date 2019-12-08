@@ -6,7 +6,7 @@ services:
     image: mongo:4.0.13-xenial
     container_name: soccer_data_mongo
     env_file:
-      - ../.env
+      - .env
     ports:
       - "27017:27017"
     restart: always
@@ -19,8 +19,11 @@ services:
     container_name: soccer_data_scrapyd
     ports:
       - "6800:6800"
-    env_file: 
-      - ../.env
+    environment:
+      - MONGO_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb/soccer
+      - MONGO_DATABASE=${MONGO_DATABASE}
+      - MONGO_LEAGUES_COLLECTION=${MONGO_LEAGUES_COLLECTION}
+      - MONGO_MATCHES_COLLECTION=${MONGO_MATCHES_COLLECTION}
     restart: always
 
 volumes:
