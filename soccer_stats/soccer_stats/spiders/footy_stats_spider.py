@@ -21,7 +21,7 @@ class FootyStatsSpider(scrapy.Spider):
     Fetched data: leagues and related matches.
     """
 
-    name = 'footy_stats_spider'
+    name = 'get_soccer_data'
     allowed_domains = ['footystats.org']
     base_url = 'https://footystats.org'
 

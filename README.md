@@ -40,7 +40,7 @@ $ docker-compose up -d
 ```
 
 At this moment scrapyd service and mongodb containers should running on your machine.
-Change directory to internal soccer_stats folder and execute request to scrapyd service:
+Change directory to internal `soccer_stats` folder and execute request to scrapyd service:
 ```
 curl http://localhost:6800/addversion.json -F project=soccer_stats -F version=0.1 -F egg=@soccer_stats.egg
 ```
