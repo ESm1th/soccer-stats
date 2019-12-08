@@ -25,7 +25,7 @@ Structure
             ...
 ```
 
-Add `.env` file to projects `root` directory and fill it with following variables:
+Add `.env` file to projects `docker` directory and fill it with following variables:
 ```
 MONGO_USERNAME=username  # username that should interact with database
 MONGO_PASSWORD=password  # password for this username
@@ -34,8 +34,7 @@ MONGO_LEAGUES_COLLECTION=leagues  # collection name for fetched leagues
 MONGO_MATCHES_COLLECTION=matches  # collection name for fetched matches
 ```
 
-Change directory to projects `docker` folder (where are located `Dockerfile` and `docker-compose.yml`).
-Execute following commands in term:
+After creating `.env` file execute following command in term:
 ```
 $ docker-compose up -d
 ```
