@@ -1,4 +1,4 @@
-# soccer-stats
+# soccer_stats
 Project to fetch soccer data from web
 
 #### How to start
