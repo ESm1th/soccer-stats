@@ -17,15 +17,17 @@ from soccer_stats.processors import (
 class League(scrapy.Item):
     title = scrapy.Field(output_processor=process_league_title)
     country = scrapy.Field(output_processor=TakeFirst())
-    nation = scrapy.Field(output_processor=strip_string)
-    division = scrapy.Field(output_processor=strip_string)
-    league_type = scrapy.Field(output_processor=strip_string)
+    # nation = scrapy.Field(output_processor=strip_string)
+    # division = scrapy.Field(output_processor=strip_string)
+    # league_type = scrapy.Field(output_processor=strip_string)
     teams_count = scrapy.Field(output_processor=convert_to_integer)
-    season = scrapy.Field(output_processor=process_season)
+    # season = scrapy.Field(output_processor=process_season)
+    season_start = scrapy.Field()
+    season_end = scrapy.Field()
     all_matches_count = scrapy.Field(output_processor=process_all_matches)
     completed = scrapy.Field()
     image_url = scrapy.Field(output_processor=TakeFirst())
-    hash = scrapy.Field()
+    # hash = scrapy.Field()
     blocked = scrapy.Field()
 
 

@@ -49,11 +49,21 @@ AUTOTHROTTLE_DEBUG = True
 # Dupefilter settings
 DUPEFILTER_DEBUG = True
 
+# Set database type: 'mongo' or 'postgres'
+DATABASE = 'postgres'
+
 # Mongo settings
-MONGO_URI = os.environ['MONGO_URI']
-MONGO_DATABASE = os.environ['MONGO_DATABASE']
-MONGO_LEAGUES_COLLECTION = os.environ['MONGO_LEAGUES_COLLECTION']
-MONGO_MATCHES_COLLECTION = os.environ['MONGO_MATCHES_COLLECTION']
+if DATABASE == 'mongo':
+    MONGO_URI = os.environ['MONGO_URI']
+    MONGO_DATABASE = os.environ['MONGO_DATABASE']
+    MONGO_LEAGUES_COLLECTION = os.environ['MONGO_LEAGUES_COLLECTION']
+    MONGO_MATCHES_COLLECTION = os.environ['MONGO_MATCHES_COLLECTION']
+
+# Postgres settings
+if DATABASE == 'postgres':
+    POSTGRES_USER = os.environ['POSTGRES_USER']
+    POSTGRES_PASSWORD = os.environ['POSTGRES_PASSWORD']
+    POSTGRES_DB = os.environ['POSTGRES_DB']
 
 # Item pipelines
 ITEM_PIPELINES = {
