@@ -5,7 +5,8 @@ from sqlalchemy import (
     String,
     Boolean,
     ForeignKey,
-) 
+)
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -39,8 +40,8 @@ Base = declarative_base()
 class Country(Base):
     __tablename__ = 'countries'
 
-    id = Column('id', String, primary_key=True)
-    title = Column('title', String, unique=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    title = Column(String, unique=True)
 
     # relationships
     leagues = relationship('League')
@@ -49,14 +50,13 @@ class Country(Base):
 class League(Base):
     __tablename__ = 'leagues'
     
-    id = Column(String, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     title = Column(String, unique=True)
-    country_id = Column(String, ForeignKey('countries.id'))
+    country_id = Column(UUID(as_uuid=True), ForeignKey('countries.id'))
     teams_count = Column(Integer)
     season_start = Column(Integer)
     season_end = Column(Integer)
     all_matches_count = Column(Integer)
-    completed = Column(Boolean, default=False)
     image_url = Column(String)
     blocked = Column(Boolean, default=False)
 
@@ -68,8 +68,8 @@ class League(Base):
 class Match(Base):
     __tablename__ = 'matches'
 
-    id = Column(String, primary_key=True)
-    league_id = Column(String, ForeignKey('leagues.id'))
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    league_id = Column(UUID(as_uuid=True), ForeignKey('leagues.id'))
     timestamp = Column(Integer)
     home_team = Column(String)
     away_team = Column(String)
@@ -91,8 +91,8 @@ class Match(Base):
 class MatchStatistics(Base):
     __tablename__ = 'statistics'
 
-    id = Column(String, primary_key=True)
-    match_id = Column(String, ForeignKey('matches.id'))
+    id = Column(UUID(as_uuid=True), primary_key=True)
+    match_id = Column(UUID(as_uuid=True), ForeignKey('matches.id'))
     possession_home = Column(Integer)
     possession_away = Column(Integer)
     shots_home = Column(Integer)

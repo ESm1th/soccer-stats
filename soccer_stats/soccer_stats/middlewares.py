@@ -1,5 +1,6 @@
 from time import sleep
 from logging import getLogger
+from w3lib.http import basic_auth_header
 
 from scrapy.http import TextResponse
 
@@ -37,3 +38,12 @@ class Blank200ResponseMiddleware:
                 request.dont_filter = True
                 return request
         return response
+
+
+class SetProxyMiddleware:
+    def process_request(self, request, spider):
+        request.meta['proxy'] = 'http://zproxy.lum-superproxy.io:22225'
+        request.headers['Proxy-Authorization'] = basic_auth_header(
+            'lum-customer-hl_2f143a51-zone-static',  # username
+            'qbvlthdljo1r'  # password
+        )

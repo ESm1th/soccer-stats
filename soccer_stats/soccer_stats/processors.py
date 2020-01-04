@@ -12,8 +12,18 @@ def convert_to_integer(values: list) -> int:
     return int(values.pop())
 
 
-def process_season(values: list) -> str:
-    return values.pop().strip()
+def process_season_start(values: list) -> int:
+    season = values.pop().strip()
+    if '/' not in season:
+        return int(season)
+    return int(season.split('/')[0])
+
+
+def process_season_end(values: list) -> int:
+    season = valuse.pop().strip()
+    if '/' not in season:
+        return int(season)
+    return int(season.split('/')[1])
 
 
 def process_all_matches(values: list) -> int:
@@ -34,5 +44,9 @@ def process_away_result(values: list) -> int:
     return int(values.pop().strip())
 
 
-def process_post_match_data(values: list) -> list:
-    return [int(value.strip()) for value in values]
+def process_post_match_data_home(values: list) -> int:
+    return int(values[0].strip())
+
+
+def process_post_match_data_awat(values: list) -> int:
+    return int(values[1].strip())

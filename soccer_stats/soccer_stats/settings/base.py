@@ -1,5 +1,9 @@
 import os
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 BOT_NAME = 'soccer_stats'
 
@@ -66,14 +70,15 @@ if DATABASE == 'postgres':
     POSTGRES_DB = os.environ['POSTGRES_DB']
 
 # Item pipelines
-ITEM_PIPELINES = {
-    'soccer_stats.pipelines.LeaguePipeline': 100,
-    'soccer_stats.pipelines.MatchPipeline': 110,
-    'soccer_stats.pipelines.PostMatchStatisticsPipeline': 120
-}
+# ITEM_PIPELINES = {
+#     'soccer_stats.pipelines.LeaguePipeline': 100,
+#     'soccer_stats.pipelines.MatchPipeline': 110,
+#     'soccer_stats.pipelines.PostMatchStatisticsPipeline': 120
+# }
 
 # Custom project downloader middlewares
 DOWNLOADER_MIDDLEWARES = {
+    'soccer_stats.middlewares.SetProxyMiddleware': 720,
     'soccer_stats.middlewares.Blank200ResponseMiddleware': 1000,
 }
 
