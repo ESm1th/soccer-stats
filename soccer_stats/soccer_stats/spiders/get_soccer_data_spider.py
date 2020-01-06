@@ -125,8 +125,9 @@ class GetSoccerDataSpider(scrapy.Spider):
         loader.add_xpath(
             'all_matches_count',
             (
-                '//div[@class="league-details"]/div[@class="detail season"]'
-                '/div[contains(., "Matches")]/following-sibling::div/text()'
+                '//div[@class="league-details"]/div[@class="detail"]'
+                '/following-sibling::div[contains(., "Matches")]'
+                '/div[@class="w65 fl boldFont"]/text()' 
             )
         )
         loader.add_xpath(
