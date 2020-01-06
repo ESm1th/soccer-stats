@@ -51,9 +51,6 @@ DUPEFILTER_DEBUG = True
 
 # Item pipelines
 ITEM_PIPELINES = {
-    # 'soccer_stats.pipelines.LeaguePipeline': 100,
-    # 'soccer_stats.pipelines.MatchPipeline': 110,
-    # 'soccer_stats.pipelines.PostMatchStatisticsPipeline': 120,
     'soccer_stats.pipelines.CountrySqlDbPipeline': 130,
     'soccer_stats.pipelines.LeagueSqlDbPipeline': 140,
     'soccer_stats.pipelines.MatchSqlDbPipeline': 150,
@@ -62,7 +59,6 @@ ITEM_PIPELINES = {
 
 # Custom project downloader middlewares
 DOWNLOADER_MIDDLEWARES = {
-    'soccer_stats.middlewares.SetProxyMiddleware': 720,
     'soccer_stats.middlewares.Blank200ResponseMiddleware': 1000,
 }
 
@@ -75,6 +71,12 @@ POSTGRES_PASSWORD = os.environ['POSTGRES_PASSWORD']
 POSTGRES_DB = os.environ['POSTGRES_DB']
 
 # Proxy settings
-PROXY = os.environ['PROXY']
-PROXY_USERNAME = os.environ['PROXY_USERNAME']
-PROXY_PASSWORD = os.environ['PROXY_PASSWORD']
+PROXY = True
+
+if PROXY:
+    PROXY_URL = os.environ['PROXY_URL']
+    PROXY_USERNAME = os.environ['PROXY_USERNAME']
+    PROXY_PASSWORD = os.environ['PROXY_PASSWORD']
+    DOWNLOADER_MIDDLEWARES.update(
+        {'soccer_stats.middlewares.SetProxyMiddleware': 720}
+    )
