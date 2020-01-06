@@ -16,12 +16,12 @@ from soccer_stats.processors import (
 )
 
 
-class Country(scrapy.Item):
+class CountryItem(scrapy.Item):
     id = scrapy.Field(output_processor=TakeFirst())
     title = scrapy.Field(output_processor=TakeFirst())
 
 
-class League(scrapy.Item):
+class LeagueItem(scrapy.Item):
     id = scrapy.Field(output_processor=TakeFirst())
     title = scrapy.Field(output_processor=process_league_title)
     country_id = scrapy.Field(output_processor=TakeFirst())
@@ -34,7 +34,7 @@ class League(scrapy.Item):
     blocked = scrapy.Field()
 
 
-class Match(scrapy.Item):
+class MatchItem(scrapy.Item):
     id = scrapy.Field(output_processor=TakeFirst())
     league_id = scrapy.Field(output_processor=TakeFirst())
     timestamp = scrapy.Field(output_processor=process_timestamp)
@@ -47,7 +47,7 @@ class Match(scrapy.Item):
     away_image = scrapy.Field()
 
 
-class PostMatchStatistics(scrapy.Item):
+class PostMatchStatisticsItem(scrapy.Item):
     id = scrapy.Field(output_processor=TakeFirst())
     match_id = scrapy.Field(output_processor=TakeFirst())
     possession_home = scrapy.Field(output_processor=process_post_match_data_home)

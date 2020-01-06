@@ -1,3 +1,5 @@
+from contextlib import AbstractContextManager
+
 from sqlalchemy import (
     create_engine,
     Column,
@@ -8,22 +10,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, sessionmaker
 
-# from soccer_stats.settings import (
-#     POSTGRES_USER,
-#     POSTGRES_PASSWORD,
-#     POSTGRES_DB
-# )
-import os
-from dotenv import load_dotenv
+from soccer_stats.settings import (
+    POSTGRES_USER,
+    POSTGRES_PASSWORD,
+    POSTGRES_DB
+)
 
-
-load_dotenv()
-
-POSTGRES_USER = os.environ['POSTGRES_USER']
-POSTGRES_PASSWORD = os.environ['POSTGRES_PASSWORD']
-POSTGRES_DB = os.environ['POSTGRES_DB']
 
 engine = create_engine(
     'postgresql+psycopg2://{user}:{password}@localhost/{database}'.format(
@@ -34,7 +28,21 @@ engine = create_engine(
 )
 
 
+Session = sessionmaker(bind=engine)
 Base = declarative_base()
+
+
+class SessionScope(AbstractContextManager):
+    def __init__(self, *args, **kwargs):
+        self.session = Session()
+
+    def __enter__(self):
+        return self.session
+    
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if exc_type:
+            self.session.rollback()
+        self.session.close()
 
 
 class Country(Base):
@@ -51,7 +59,7 @@ class League(Base):
     __tablename__ = 'leagues'
     
     id = Column(UUID(as_uuid=True), primary_key=True)
-    title = Column(String, unique=True)
+    title = Column(String)
     country_id = Column(UUID(as_uuid=True), ForeignKey('countries.id'))
     teams_count = Column(Integer)
     season_start = Column(Integer)
@@ -99,6 +107,8 @@ class MatchStatistics(Base):
     shots_away = Column(Integer)
     cards_home = Column(Integer)
     cards_away = Column(Integer)
+    corners_home = Column(Integer)
+    corners_away = Column(Integer)
     fouls_home = Column(Integer)
     fouls_away = Column(Integer)
     offsides_home = Column(Integer)
@@ -109,7 +119,3 @@ class MatchStatistics(Base):
 
 
 Base.metadata.create_all(engine)
-
-
-if __name__ == '__main__':
-    print(Country.__table__)
