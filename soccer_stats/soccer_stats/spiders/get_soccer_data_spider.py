@@ -1,20 +1,20 @@
 import json
 from datetime import datetime
-from bson.objectid import ObjectId
-from hashlib import md5
+from uuid import uuid4
 
 import scrapy
 from scrapy.http import FormRequest, HtmlResponse
 from scrapy.loader import ItemLoader
 
 from soccer_stats.items import (
-    League,
-    Match,
-    PostMatchStatistics
+    CountryItem,
+    LeagueItem,
+    MatchItem,
+    PostMatchStatisticsItem
 )
 
 
-class FootyStatsSpider(scrapy.Spider):
+class GetSoccerDataSpider(scrapy.Spider):
 
     """
     Spider that pulls soccer data from web resources.
@@ -25,11 +25,9 @@ class FootyStatsSpider(scrapy.Spider):
     allowed_domains = ['footystats.org']
     base_url = 'https://footystats.org'
 
-    # custom_settings = {'LOG_STDOUT': True, 'LOG_FILE': None}
-
     def start_requests(self):
         yield scrapy.Request(
-            url=self.make_url('/leagues/'),
+            url=self.make_url('leagues/'),
             callback=self.parse_leagues
         )
 
@@ -39,21 +37,33 @@ class FootyStatsSpider(scrapy.Spider):
         coutry name from selector and than yields requests for all leagues urls
         for each available country.
         """
-        country_selectors = response.xpath('//div[@class="pt2e"]')
 
-        for selector in country_selectors:
-            country = selector.attrib['id']  # country name
-            leagues_urls = selector.xpath('div/table/tr/td/a/@href').getall()
+        # get relative urls pathes for each league
+        leagues_urls = response.xpath(
+            '//div[@class="team-item info"]/a/@href'
+        ).getall()
 
-            for url in leagues_urls:
-                yield response.follow(
-                    url=url,
-                    callback=self.parse_league,
-                    cb_kwargs={'country': country}
-                )
+        countries_ids = {}  # empty dict to gather unique country titles
+
+        for url in leagues_urls:
+            country_name = url.strip('/').split('/')[0]
+
+            if country_name not in countries_ids.keys():
+                loader = ItemLoader(item=CountryItem(), response=response)
+                loader.add_value('title', country_name)
+                loader.add_value('id', uuid4())
+                country = loader.load_item()
+                countries_ids[country_name] = country['id']
+                yield country
+
+            yield response.follow(
+                url=url,
+                callback=self.parse_league,
+                cb_kwargs={'country_id': countries_ids[country_name]}
+            )
 
     def parse_league(self, response, **kwargs):
-        """Makes requests for each available season for particular league."""        
+        """Makes requests for each available season for particular league."""
         seasons = response.xpath(
             '//div[@class="detail season"]/'
             'div[contains(@class, "drop-down-parent")]/ul/li/a'
@@ -73,44 +83,24 @@ class FootyStatsSpider(scrapy.Spider):
                 method='POST',
                 formdata=params,
                 callback=self.parse_season,
-                cb_kwargs={'country': kwargs.get('country')}
+                cb_kwargs={'country_id': kwargs.get('country_id')}
             )
 
     def parse_season(self, response, **kwargs):
-        """Parses page with particular league season. Creates `league` item and
-        fills it with data parsed from returned content. League item has `hash`
-        field that uses to prevent duplicate values in a database and for
-        manual references with `match` items."""
+        """
+        Parses page with particular league season. Creates `league` item and
+        fills it with data parsed from returned content.
+        """
         loader = ItemLoader(
-            item=League(),
+            item=LeagueItem(),
             response=response
         )
-        loader.add_value('country', kwargs.get('country'))
+        loader.add_value('id', uuid4())
         loader.add_xpath(
             'title',
             '//div[@id="teamSummary"]/h1[contains(@class, "teamName")]/text()'
         )
-        loader.add_xpath(
-            'nation',
-            (
-                '//div[@class="league-details"]/div[@class="detail"]'
-                '/div[contains(., "Nation")]/following-sibling::div/a/text()'
-            )
-        )
-        loader.add_xpath(
-            'division',
-            (
-                '//div[@class="league-details"]/div[@class="detail"]'
-                '/div[contains(., "Division")]/following-sibling::div/text()'
-            )
-        )
-        loader.add_xpath(
-            'league_type',
-            (
-                '//div[@class="league-details"]/div[@class="detail"]'
-                '/div[contains(., "Type")]/following-sibling::div/text()'
-            )
-        )
+        loader.add_value('country_id', kwargs.get('country_id'))
         loader.add_xpath(
             'teams_count',
             (
@@ -119,7 +109,14 @@ class FootyStatsSpider(scrapy.Spider):
             )
         )
         loader.add_xpath(
-            'season',
+            'season_start',
+            (
+                '//div[@class="league-details"]/div[@class="detail season"]'
+                '/div[contains(., "Season")]/following-sibling::div/text()'
+            )
+        )
+        loader.add_xpath(
+            'season_end',
             (
                 '//div[@class="league-details"]/div[@class="detail season"]'
                 '/div[contains(., "Season")]/following-sibling::div/text()'
@@ -138,16 +135,15 @@ class FootyStatsSpider(scrapy.Spider):
         )
         league = loader.load_item()
 
-        league['hash'] = md5(
-            str([league['title'], league['season']]).encode()
-        ).hexdigest()
-        yield league
-
         matches = response.xpath(
             '//div[@id="teamSummary"]/ul[contains(@class, "secondary-nav")]/'
             'li[contains(@class, "middle")]/a'
         )  # selector
         href = matches.xpath('@href').get()
+
+        # matches for this league available for premium account
+        league['blocked'] = True if href else False
+        yield league
 
         if href == '#':
             # parameters for urls query string
@@ -162,17 +158,13 @@ class FootyStatsSpider(scrapy.Spider):
                 method='POST',
                 formdata=params,
                 callback=self.parse_matches,
-                cb_kwargs={'league_hash': league['hash']}
+                cb_kwargs={'league_id': league['id']}
             )
-        elif not href:
-            # matches for this league available for premium account
-            league['blocked'] = True
-            yield league
-        else:
+        elif href and href != '#':
             yield response.follow(
                 url=href,
                 callback=self.parse_matches,
-                cb_kwargs={'league_hash': league['hash']}
+                cb_kwargs={'league_id': league['id']}
             )
 
     def parse_matches(self, response, **kwargs):
@@ -189,7 +181,7 @@ class FootyStatsSpider(scrapy.Spider):
             yield response.follow(
                 url=match,
                 callback=self.parse_match_dates,
-                cb_kwargs={'league_hash': kwargs.get('league_hash')}
+                cb_kwargs={'league_id': kwargs.get('league_id')}
             )
 
     def parse_match_dates(self, response, **kwargs):
@@ -209,15 +201,13 @@ class FootyStatsSpider(scrapy.Spider):
             method='POST',
             formdata=params,
             callback=self.parse_match,
-            cb_kwargs={'league_hash': kwargs.get('league_hash')}
+            cb_kwargs={'league_id': kwargs.get('league_id')}
         )
 
     def parse_match(self, response, **kwargs):
         """
         Fetches data about particular event from returned content.
-        Creates match item and fills with fetched data. Match item has `hash`
-        field that uses to prevent duplicate values in a database and to connect
-        it with `PostMatchStatisticsItem` if these data will exist.
+        Creates match item and fills with fetched data.
         """
         html_event_part = HtmlResponse(
             url=response.url,
@@ -225,13 +215,11 @@ class FootyStatsSpider(scrapy.Spider):
         )
 
         match_loader = ItemLoader(
-            item=Match(),
+            item=MatchItem(),
             response=html_event_part
         )
-        match_loader.add_value(
-            'league_hash',
-            kwargs.get('league_hash')
-        )
+        match_loader.add_value('id', uuid4())
+        match_loader.add_value('league_id', kwargs.get('league_id'))
         match_loader.add_xpath(
             'timestamp',
             '//p[@data-time]/@data-time'
@@ -259,14 +247,6 @@ class FootyStatsSpider(scrapy.Spider):
             'div[@class="widget-content"]/h2/text()'
         )
         match = match_loader.load_item()
-
-        fields = [
-            match['league_hash'],
-            match['timestamp'],
-            match['home_team'],
-            match['away_team']
-        ]
-        match['hash'] = md5(str(fields).encode()).hexdigest()
         yield match
 
         html_post_match = HtmlResponse(
@@ -277,36 +257,66 @@ class FootyStatsSpider(scrapy.Spider):
         if html_post_match.xpath('//div[@class="w100 cf ac"]'):
             # if post match statistics data exists
             statistics_loader = ItemLoader(
-                item=PostMatchStatistics(),
+                item=PostMatchStatisticsItem(),
                 response=html_post_match
             )
-            statistics_loader.add_value('match_hash', match['hash'])
+            statistics_loader.add_value('id', uuid4())
+            statistics_loader.add_value('match_id', match['id'])
             statistics_loader.add_xpath(
-                'possession',
+                'possession_home',
                 '//span[contains(@class, "possession")]/text()'
             )
             statistics_loader.add_xpath(
-                'shots',
+                'possession_away',
+                '//span[contains(@class, "possession")]/text()'
+            )
+            statistics_loader.add_xpath(
+                'shots_home',
                 '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Shots")]'
                 '/following-sibling::div[contains(@class, "bbox")]/span/text()'
             )
             statistics_loader.add_xpath(
-                'cards',
+                'shots_away',
+                '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Shots")]'
+                '/following-sibling::div[contains(@class, "bbox")]/span/text()'
+            )
+            statistics_loader.add_xpath(
+                'cards_home',
                 '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Cards")]'
                 '/following-sibling::div[contains(@class, "bbox")]/span/text()'
             )
             statistics_loader.add_xpath(
-                'corners',
+                'cards_away',
+                '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Cards")]'
+                '/following-sibling::div[contains(@class, "bbox")]/span/text()'
+            )
+            statistics_loader.add_xpath(
+                'corners_home',
                 '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Corners")]'
                 '/following-sibling::div[contains(@class, "bbox")]/span/text()'
             )
             statistics_loader.add_xpath(
-                'fouls',
+                'corners_away',
+                '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Corners")]'
+                '/following-sibling::div[contains(@class, "bbox")]/span/text()'
+            )
+            statistics_loader.add_xpath(
+                'fouls_home',
                 '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Fouls")]'
                 '/following-sibling::div[contains(@class, "bbox")]/span/text()'
             )
             statistics_loader.add_xpath(
-                'offsides',
+                'fouls_away',
+                '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Fouls")]'
+                '/following-sibling::div[contains(@class, "bbox")]/span/text()'
+            )
+            statistics_loader.add_xpath(
+                'offsides_home',
+                '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Offsides")]'
+                '/following-sibling::div[contains(@class, "bbox")]/span/text()'
+            )
+            statistics_loader.add_xpath(
+                'offsides_away',
                 '//div[@class="w100 m0Auto"]/div/div[contains(text(), "Offsides")]'
                 '/following-sibling::div[contains(@class, "bbox")]/span/text()'
             )

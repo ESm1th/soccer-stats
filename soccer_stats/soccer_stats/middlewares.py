@@ -1,7 +1,10 @@
 from time import sleep
 from logging import getLogger
+from w3lib.http import basic_auth_header
 
 from scrapy.http import TextResponse
+
+from soccer_stats import settings
 
 
 logger = getLogger(__name__)
@@ -37,3 +40,19 @@ class Blank200ResponseMiddleware:
                 request.dont_filter = True
                 return request
         return response
+
+
+class SetProxyMiddleware:
+
+    """
+    Class puts proxy settings to each request.
+    """
+
+    def process_request(self, request, spider):
+        if settings.PROXY:
+            auth = basic_auth_header(
+                settings.PROXY_USERNAME,
+                settings.PROXY_PASSWORD
+            )
+            request.meta['proxy'] = settings.PROXY_URL
+            request.headers['Proxy-Authorization'] = auth

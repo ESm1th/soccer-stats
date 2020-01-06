@@ -49,17 +49,12 @@ AUTOTHROTTLE_DEBUG = True
 # Dupefilter settings
 DUPEFILTER_DEBUG = True
 
-# Mongo settings
-MONGO_URI = os.environ['MONGO_URI']
-MONGO_DATABASE = os.environ['MONGO_DATABASE']
-MONGO_LEAGUES_COLLECTION = os.environ['MONGO_LEAGUES_COLLECTION']
-MONGO_MATCHES_COLLECTION = os.environ['MONGO_MATCHES_COLLECTION']
-
 # Item pipelines
 ITEM_PIPELINES = {
-    'soccer_stats.pipelines.LeaguePipeline': 100,
-    'soccer_stats.pipelines.MatchPipeline': 110,
-    'soccer_stats.pipelines.PostMatchStatisticsPipeline': 120
+    'soccer_stats.pipelines.CountrySqlDbPipeline': 130,
+    'soccer_stats.pipelines.LeagueSqlDbPipeline': 140,
+    'soccer_stats.pipelines.MatchSqlDbPipeline': 150,
+    'soccer_stats.pipelines.MatchStatisticsSqlDbPipeline': 160
 }
 
 # Custom project downloader middlewares
@@ -70,3 +65,18 @@ DOWNLOADER_MIDDLEWARES = {
 # Timeout for blank 200 responses in seconds
 BLANK_TIMEOUT = 20
 
+# Postgres settings
+POSTGRES_USER = os.environ['POSTGRES_USER']
+POSTGRES_PASSWORD = os.environ['POSTGRES_PASSWORD']
+POSTGRES_DB = os.environ['POSTGRES_DB']
+
+# Proxy settings
+PROXY = True
+
+if PROXY:
+    PROXY_URL = os.environ['PROXY_URL']
+    PROXY_USERNAME = os.environ['PROXY_USERNAME']
+    PROXY_PASSWORD = os.environ['PROXY_PASSWORD']
+    DOWNLOADER_MIDDLEWARES.update(
+        {'soccer_stats.middlewares.SetProxyMiddleware': 720}
+    )

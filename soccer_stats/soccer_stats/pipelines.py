@@ -1,76 +1,82 @@
-from soccer_stats.mongo import mongo_client
-from soccer_stats.settings import (
-    MONGO_LEAGUES_COLLECTION,
-    MONGO_MATCHES_COLLECTION
-)
 from soccer_stats.items import (
+    CountryItem,
+    LeagueItem,
+    MatchItem,
+    PostMatchStatisticsItem
+)
+from soccer_stats.db import (
+    SessionScope,
+    Country,
     League,
     Match,
-    PostMatchStatistics
+    MatchStatistics
 )
 
 
-class BaseSoccerStatsPipline:
-    """Common methods across pipelines."""
+session_scope = SessionScope()
+
+
+class BaseSqlDbPipeline:
+
+    """Common method across pipelines."""
 
     def open_spider(self, spider):
-        self.client = mongo_client
+        self.scope = session_scope
 
-    def close_spider(self, spider):
-        self.client.close()
 
-class LeaguePipeline(BaseSoccerStatsPipline):
+class CountrySqlDbPipeline(BaseSqlDbPipeline):
+
+    """
+    Works with `CountryItem` item. Insert new entry to database.
+    """
 
     def process_item(self, item, spider):
-        """Works with `League` item. Insert new document to database or
-        update it if this document already exists."""
-
-        if isinstance(item, League):
-            self.client.collection = MONGO_LEAGUES_COLLECTION
-            league = self.client.collection.find_one({'hash': item['hash']})
-
-            if not league:
-                self.client.collection.insert_one(dict(item))
-            else:
-                self.client.collection.update_one(
-                    {'hash': item['hash']},
-                    {'$set': dict(item)}
-                )
+        if isinstance(item, CountryItem):
+            with self.scope as session:
+                country = Country(**item)
+                session.add(country)
+                session.commit()
         return item
 
 
-class MatchPipeline(BaseSoccerStatsPipline):
+class LeagueSqlDbPipeline(BaseSqlDbPipeline):
+
+    """
+    Works with `LeagueItem` item. Insert new entry to database.
+    """
 
     def process_item(self, item, spider):
-        """Works with `Match` item. Insert new document to database or
-        update it if this document already exists."""
-
-        if isinstance(item, Match):
-            self.client.collection = MONGO_MATCHES_COLLECTION
-            match = self.client.collection.find_one({'hash': item['hash']})
-
-            if match:
-                self.client.collection.update_one(
-                    {'hash': item['hash']},
-                    {'$set': dict(item)}
-                )
-            else:
-                self.client.collection.insert_one(dict(item))
+        if isinstance(item, LeagueItem):
+            with self.scope as session:
+                league = League(**item)
+                session.add(league)
+                session.commit()
         return item
 
 
-class PostMatchStatisticsPipeline(BaseSoccerStatsPipline):
+class MatchSqlDbPipeline(BaseSqlDbPipeline):
+
+    """Works with `MatchItem` item. Insert new entry to database."""
 
     def process_item(self, item, spider):
-        """Works with `PostMatchStatistics` item. Updates existing `Match`
-        document by match statistics."""
+        if isinstance(item, MatchItem):
+            with self.scope as session:
+                match = Match(**item)
+                session.add(match)
+                session.commit()
+        return item
 
-        if isinstance(item, PostMatchStatistics):
-            self.client.collection = MONGO_MATCHES_COLLECTION
 
-            match_hash = item.pop('match_hash')
-            self.client.collection.update_one(
-                {'hash': match_hash},
-                {'$set': {'post_match_statistics': dict(item)}}
-            )
+class MatchStatisticsSqlDbPipeline(BaseSqlDbPipeline):
+
+    """
+    Works with `PostMatchStatisticsItem` item. Insert new entry to database.
+    """
+
+    def process_item(self, item, spider):
+        if isinstance(item, PostMatchStatisticsItem):
+            with self.scope as session:
+                statistics = MatchStatistics(**item)
+                session.add(statistics)
+                session.commit()
         return item

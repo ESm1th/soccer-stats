@@ -18,7 +18,6 @@ Structure
       |     .env
       |     docker-compose.yml
       |     Dockerfile
-      |     mongo-init.sh
       |     requirements.txt
       |     scrapyd.conf
       +---soccer_stats
@@ -27,11 +26,15 @@ Structure
 
 Add `.env` file to projects `docker` directory and fill it with following variables:
 ```
-MONGO_USERNAME=username  # username that should interact with database
-MONGO_PASSWORD=password  # password for this username
-MONGO_DATABASE=soccer  # name of database, you can enter here any prefferd name
-MONGO_LEAGUES_COLLECTION=leagues  # collection name for fetched leagues
-MONGO_MATCHES_COLLECTION=matches  # collection name for fetched matches
+POSTGRES_USER=username  # username that should interact with database
+POSTGRES_PASSWORD=password  # password for this username
+POSTGRES_DB=soccer  # name of database, you can enter here any prefferd name
+```
+Add `proxy` variables in `.env` file to avoid from blocking (it is not neccesary but recommended):
+```
+PROXY_URL=proxy_url  # proxy url that should be used in custom proxy middleware for each request
+PROXY_USERNAME=proxy_username  # proxy username for authentication purposes (you should get it from proxy provider)
+PROXY_PASSWORD=proxy_password  # proxy password for authentication purposes (you should get it from proxy provider)
 ```
 
 After creating `.env` file execute following command in term:
@@ -39,10 +42,14 @@ After creating `.env` file execute following command in term:
 $ docker-compose up -d
 ```
 
-At this moment scrapyd service and mongodb containers should running on your machine.
-Change directory to internal `soccer_stats` folder and execute request to scrapyd service:
+At this moment scrapyd service and postgres containers should running on your machine.
+Change directory to internal `soccer_stats/eggs/` folder and execute request to scrapyd service without `proxy`:
 ```
 curl http://localhost:6800/addversion.json -F project=soccer_stats -F version=0.1 -F egg=@soccer_stats.egg
+```
+or with `proxy`
+```
+curl http://localhost:6800/addversion.json -F project=soccer_stats -F version=0.1 -F egg=@soccer_stats_proxy.egg
 ```
 Response from request above:
 ```
@@ -78,5 +85,5 @@ Response:
 }
 ```
 
-This mean that spider `get_soccer_data` is running and pulling data to mongodb.
+This mean that spider `get_soccer_data` is running and pulling data to postgres database.
 
