@@ -32,7 +32,7 @@ POSTGRES_DB=soccer  # name of database, you can enter here any prefferd name
 ```
 Add `proxy` variables in `.env` file to avoid from blocking (it is not neccesary but recommended):
 ```
-PROXY_URL=proxy_url  # proxy url that shoul be used in custom proxy middleware for each request
+PROXY_URL=proxy_url  # proxy url that should be used in custom proxy middleware for each request
 PROXY_USERNAME=proxy_username  # proxy username for authentication purposes (you should get it from proxy provider)
 PROXY_PASSWORD=proxy_password  # proxy password for authentication purposes (you should get it from proxy provider)
 ```
