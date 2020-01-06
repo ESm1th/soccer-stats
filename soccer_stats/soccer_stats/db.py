@@ -20,7 +20,7 @@ from soccer_stats.settings import (
 
 
 engine = create_engine(
-    'postgresql+psycopg2://{user}:{password}@localhost/{database}'.format(
+    'postgresql+psycopg2://{user}:{password}@db/{database}'.format(
         user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
         database=POSTGRES_DB
