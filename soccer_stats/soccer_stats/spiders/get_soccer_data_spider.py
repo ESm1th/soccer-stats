@@ -1,8 +1,6 @@
 import json
 from datetime import datetime
 from uuid import uuid4
-from bson.objectid import ObjectId
-from hashlib import md5
 
 import scrapy
 from scrapy.http import FormRequest, HtmlResponse
