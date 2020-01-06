@@ -4,11 +4,7 @@ from w3lib.http import basic_auth_header
 
 from scrapy.http import TextResponse
 
-from soccer_stats.settings import (
-    PROXY,
-    PROXY_USERNAME,
-    PROXY_PASSWORD
-)
+from soccer_stats import settings
 
 
 logger = getLogger(__name__)
@@ -53,6 +49,10 @@ class SetProxyMiddleware:
     """
 
     def process_request(self, request, spider):
-        auth = basic_auth_header(PROXY_USERNAME, PROXY_PASSWORD)
-        request.meta['proxy'] = PROXY
-        request.headers['Proxy-Authorization'] = auth
+        if settings.PROXY:
+            auth = basic_auth_header(
+                settings.PROXY_USERNAME,
+                settings.PROXY_PASSWORD
+            )
+            request.meta['proxy'] = settings.PROXY_URL
+            request.headers['Proxy-Authorization'] = auth
