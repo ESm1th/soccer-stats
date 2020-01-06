@@ -9,10 +9,10 @@ from scrapy.http import FormRequest, HtmlResponse
 from scrapy.loader import ItemLoader
 
 from soccer_stats.items import (
-    Country,
-    League,
-    Match,
-    PostMatchStatistics
+    CountryItem,
+    LeagueItem,
+    MatchItem,
+    PostMatchStatisticsItem
 )
 
 
@@ -47,18 +47,23 @@ class FootyStatsSpider(scrapy.Spider):
             '//div[@class="team-item info"]/a/@href'
         ).getall()
 
-        for url in leagues_urls:
-            loader = ItemLoader(item=Country(), response=response)
-            loader.add_value('title', url.strip('/').split('/')[0])
-            loader.add_value('id', uuid4())
+        countries_ids = {}  # empty dict to gather unique country titles
 
-            country = loader.load_item()
-            yield country
+        for url in leagues_urls:
+            country_name = url.strip('/').split('/')[0]
+
+            if country_name not in countries_ids.keys():
+                loader = ItemLoader(item=CountryItem(), response=response)
+                loader.add_value('title', country_name)
+                loader.add_value('id', uuid4())
+                country = loader.load_item()
+                countries_ids[country_name] = country['id']
+                yield country
 
             yield response.follow(
                 url=url,
                 callback=self.parse_league,
-                cb_kwargs={'country_id': country['id']}
+                cb_kwargs={'country_id': countries_ids[country_name]}
             )
 
     def parse_league(self, response, **kwargs):
@@ -93,7 +98,7 @@ class FootyStatsSpider(scrapy.Spider):
         manual references with `match` items.
         """
         loader = ItemLoader(
-            item=League(),
+            item=LeagueItem(),
             response=response
         )
         loader.add_value('id', uuid4())
@@ -135,13 +140,16 @@ class FootyStatsSpider(scrapy.Spider):
             '//div[@id="teamSummary"]/img/@src'
         )
         league = loader.load_item()
-        yield league
 
         matches = response.xpath(
             '//div[@id="teamSummary"]/ul[contains(@class, "secondary-nav")]/'
             'li[contains(@class, "middle")]/a'
         )  # selector
         href = matches.xpath('@href').get()
+
+        # matches for this league available for premium account
+        league['blocked'] = True if href else False
+        yield league
 
         if href == '#':
             # parameters for urls query string
@@ -158,11 +166,7 @@ class FootyStatsSpider(scrapy.Spider):
                 callback=self.parse_matches,
                 cb_kwargs={'league_id': league['id']}
             )
-        elif not href:
-            # matches for this league available for premium account
-            league['blocked'] = True
-            yield league
-        else:
+        elif href and href != '#':
             yield response.follow(
                 url=href,
                 callback=self.parse_matches,
@@ -219,7 +223,7 @@ class FootyStatsSpider(scrapy.Spider):
         )
 
         match_loader = ItemLoader(
-            item=Match(),
+            item=MatchItem(),
             response=html_event_part
         )
         match_loader.add_value('id', uuid4())
@@ -261,7 +265,7 @@ class FootyStatsSpider(scrapy.Spider):
         if html_post_match.xpath('//div[@class="w100 cf ac"]'):
             # if post match statistics data exists
             statistics_loader = ItemLoader(
-                item=PostMatchStatistics(),
+                item=PostMatchStatisticsItem(),
                 response=html_post_match
             )
             statistics_loader.add_value('id', uuid4())
