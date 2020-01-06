@@ -16,7 +16,7 @@ from soccer_stats.items import (
 )
 
 
-class FootyStatsSpider(scrapy.Spider):
+class GetSoccerDataSpider(scrapy.Spider):
 
     """
     Spider that pulls soccer data from web resources.
@@ -26,8 +26,6 @@ class FootyStatsSpider(scrapy.Spider):
     name = 'get_soccer_data'
     allowed_domains = ['footystats.org']
     base_url = 'https://footystats.org'
-
-    custom_settings = {'LOG_STDOUT': True, 'LOG_FILE': None}
 
     def start_requests(self):
         yield scrapy.Request(
@@ -93,9 +91,7 @@ class FootyStatsSpider(scrapy.Spider):
     def parse_season(self, response, **kwargs):
         """
         Parses page with particular league season. Creates `league` item and
-        fills it with data parsed from returned content. League item has `hash`
-        field that uses to prevent duplicate values in a database and for
-        manual references with `match` items.
+        fills it with data parsed from returned content.
         """
         loader = ItemLoader(
             item=LeagueItem(),
@@ -213,9 +209,7 @@ class FootyStatsSpider(scrapy.Spider):
     def parse_match(self, response, **kwargs):
         """
         Fetches data about particular event from returned content.
-        Creates match item and fills with fetched data. Match item has `hash`
-        field that uses to prevent duplicate values in a database and to connect
-        it with `PostMatchStatisticsItem` if these data will exist.
+        Creates match item and fills with fetched data.
         """
         html_event_part = HtmlResponse(
             url=response.url,
