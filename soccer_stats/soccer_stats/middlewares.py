@@ -4,6 +4,12 @@ from w3lib.http import basic_auth_header
 
 from scrapy.http import TextResponse
 
+from soccer_stats.settings import (
+    PROXY,
+    PROXY_USERNAME,
+    PROXY_PASSWORD
+)
+
 
 logger = getLogger(__name__)
 
@@ -41,9 +47,12 @@ class Blank200ResponseMiddleware:
 
 
 class SetProxyMiddleware:
+
+    """
+    Class puts proxy settings to each request.
+    """
+
     def process_request(self, request, spider):
-        request.meta['proxy'] = 'http://zproxy.lum-superproxy.io:22225'
-        request.headers['Proxy-Authorization'] = basic_auth_header(
-            'lum-customer-hl_2f143a51-zone-static',  # username
-            'qbvlthdljo1r'  # password
-        )
+        auth = basic_auth_header(PROXY_USERNAME, PROXY_PASSWORD)
+        request.meta['proxy'] = PROXY
+        request.headers['Proxy-Authorization'] = auth
